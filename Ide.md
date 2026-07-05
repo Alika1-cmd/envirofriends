@@ -5,9 +5,6 @@ EnviroFriends adalah web app gamifikasi edukasi lingkungan untuk anak-anak (SD�
 Pengguna menyelesaikan challenge harian dengan memfoto sampah nyata, diverifikasi AI
 (Google Cloud Vision CNN), dan mendapat poin/streak/level. Ada juga EcoFacts dan mini quiz harian.
 
-**Deadline: 3 hari (LIDM UGM 2026 submission)**
-**Status: Fresh scaffold, sedang dalam pengembangan aktif**
-
 ---
 
 ## Tech Stack
@@ -196,33 +193,5 @@ src/
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-GOOGLE_VISION_API_KEY=...     # Server-side only, jangan expose ke client
+GOOGLE_VISION_API_KEY=...    
 ```
-
----
-
-## Hal yang JANGAN Dilakukan
-- JANGAN expose GOOGLE_VISION_API_KEY ke client/browser (hanya di API route server-side)
-- JANGAN skip validasi confidence score — harus ≥ 0.70 di server, bukan client
-- JANGAN gunakan localStorage untuk simpan data user — semua di Supabase
-- JANGAN buat halaman baru tanpa update middleware.ts untuk proteksi route
-- JANGAN hardcode API key di source code
-- JANGAN pakai UI yang terkesan "AI-generated template" — harus editorial dan berkarakter
-- JANGAN pakai warna generik atau font default — selalu Playfair Display + Inter
-- JANGAN sebut "Roboflow" di kode manapun — AI provider kita adalah Google Cloud Vision
-
----
-
-## Prioritas Build (urutan pengerjaan)
-1. `src/lib/supabase.ts` — Supabase client browser + server
-2. `src/lib/vision.ts` — Google Vision wrapper (detectWaste)
-3. `src/lib/gamification.ts` — calculateLevel, getNextChallenge
-4. `src/lib/content.ts` — hardcode EcoFacts + quiz questions
-5. `src/middleware.ts` — route protection
-6. `src/app/page.tsx` — landing page (hero video + UNESCO style)
-7. `src/app/(auth)/login` + `register` — auth pages
-8. `src/app/dashboard/page.tsx` — dashboard user
-9. `src/app/challenge/page.tsx` + `src/components/CameraCapture.tsx`
-10. `src/api/detect/route.ts` + `src/api/points/route.ts`
-11. `src/app/ecofacts/page.tsx` + `src/app/quiz/page.tsx`
-12. Polish + deploy Vercel

@@ -1,14 +1,14 @@
 // GET /api/ecofacts
 // Kembalikan 6 fakta lingkungan harian untuk anak SD. Di-cache per tanggal di
-// tabel ecofacts_cache: hari yang sama hanya sekali hit ke Anthropic Claude.
-// Jika cache kosong → generate via Anthropic → simpan → kembalikan.
+// tabel ecofacts_cache: hari yang sama hanya sekali hit ke Gemini.
+// Jika cache kosong → generate via Gemini (Google AI Studio) → simpan → kembalikan.
 
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { createServerClient } from "@/lib/supabase-server";
 import { ECOFACTS, type EcoFact } from "@/lib/content";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "gemini-2.5-flash";
 
 const PROMPT = `Generate 6 fakta menarik tentang lingkungan dan sampah untuk anak SD Indonesia. Bahasa Indonesia yang mudah dipahami, fun, dan membuat anak termotivasi menjaga lingkungan. Jangan pakai istilah ilmiah sulit. Jangan pakai tanda em dash.
 
@@ -70,28 +70,25 @@ export async function GET() {
     return NextResponse.json({ facts: cached.facts, source: "cache" });
   }
 
-  // 2. Belum ada → generate via Anthropic.
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // 2. Belum ada → generate via Gemini.
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY belum di-set");
+    console.error("GEMINI_API_KEY belum di-set");
     return NextResponse.json({ facts: ECOFACTS.slice(0, 6), source: "fallback" });
   }
 
   let facts: EcoFact[] | null = null;
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
       model: MODEL,
-      max_tokens: 2048,
-      messages: [{ role: "user", content: PROMPT }],
+      contents: PROMPT,
+      config: { responseMimeType: "application/json" },
     });
-    const text = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const text = response.text ?? "";
     facts = parseFacts(text);
   } catch (err) {
-    console.error("Anthropic error:", err);
+    console.error("Gemini error:", err);
   }
 
   // Jika generate gagal → fallback konten hardcode supaya halaman tetap hidup.

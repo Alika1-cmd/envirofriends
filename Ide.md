@@ -1,4 +1,4 @@
-# EnviroFriends — Project Context for Claude Code
+# EnviroFriends — Project Context 
 
 ## Project Overview
 EnviroFriends adalah web app gamifikasi edukasi lingkungan untuk anak-anak (SD–SMP).

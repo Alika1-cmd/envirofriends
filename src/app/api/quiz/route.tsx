@@ -1,15 +1,15 @@
 // GET /api/quiz
 // Kembalikan 5 soal kuis harian untuk anak SD. Di-cache per tanggal di tabel
-// quiz_cache: hari yang sama hanya sekali hit ke Anthropic Claude.
-// Jika cache kosong → generate via Claude → simpan → kembalikan.
+// quiz_cache: hari yang sama hanya sekali hit ke Gemini.
+// Jika cache kosong → generate via Gemini (Google AI Studio) → simpan → kembalikan.
 
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { createServerClient } from "@/lib/supabase-server";
 import { QUIZ_QUESTIONS } from "@/lib/content";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "gemini-2.5-flash";
 
 const PROMPT = `Buat 5 soal kuis tentang sampah dan lingkungan untuk anak SD Indonesia. Bahasa yang mudah, fun, dan tidak ada istilah ilmiah sulit. Jangan pakai tanda em dash. Setiap soal punya 4 pilihan jawaban (A/B/C/D).
 
@@ -106,10 +106,10 @@ export async function GET() {
     return NextResponse.json({ questions: cached.questions, source: "cache" });
   }
 
-  // 2. Belum ada → generate via Anthropic.
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // 2. Belum ada → generate via Gemini.
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY belum di-set");
+    console.error("GEMINI_API_KEY belum di-set");
     return NextResponse.json({
       questions: fallbackQuestions(),
       source: "fallback",
@@ -118,19 +118,16 @@ export async function GET() {
 
   let questions: DailyQuizQuestion[] | null = null;
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
       model: MODEL,
-      max_tokens: 2048,
-      messages: [{ role: "user", content: PROMPT }],
+      contents: PROMPT,
+      config: { responseMimeType: "application/json" },
     });
-    const text = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const text = response.text ?? "";
     questions = parseQuestions(text);
   } catch (err) {
-    console.error("Anthropic error:", err);
+    console.error("Gemini error:", err);
   }
 
   // Generate gagal → fallback supaya halaman tetap hidup.
